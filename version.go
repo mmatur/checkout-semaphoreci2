@@ -11,9 +11,9 @@ var (
 	date    = "I don't remember exactly"
 )
 
-// DisplayVersion display version
-func DisplayVersion() {
-	fmt.Printf(`git-url-semaphoreci:
+// displayVersion Display version.
+func displayVersion() {
+	fmt.Printf(`checkout-semaphoreci2:
  version     : %s
  commit      : %s
  build date  : %s

@@ -40,14 +40,19 @@ type HasLabelConfig struct {
 type NoOption struct{}
 
 func main() {
-	defaultCfg := &Config{}
-	defaultPointerCfg := &Config{}
+	defaultCfg := &Config{
+		GithubToken: os.Getenv("GITHUB_TOKEN"),
+		URL:         os.Getenv("SEMAPHORE_GIT_BRANCH"),
+		Branch:      os.Getenv("SEMAPHORE_GIT_BRANCH"),
+		SHA:         os.Getenv("SEMAPHORE_GIT_SHA"),
+		Directory:   os.Getenv("SEMAPHORE_GIT_DIR"),
+	}
 
 	rootCmd := &flaeg.Command{
 		Name:                  "checkout-semaphoreci2",
 		Description:           "Checkout SemaphoreCI",
 		Config:                defaultCfg,
-		DefaultPointersConfig: defaultPointerCfg,
+		DefaultPointersConfig: &Config{},
 		Run: func() error {
 			return rootRun(defaultCfg)
 		},
@@ -56,11 +61,14 @@ func main() {
 	flag := flaeg.New(rootCmd, os.Args[1:])
 
 	hasLabelCfg := &HasLabelConfig{
-		Config: &Config{},
+		Config: defaultCfg,
 	}
+
+	hasLabelPtrDefault := defaultCfg
 	hasLabelPointerCfg := &HasLabelConfig{
-		Config: &Config{},
+		Config: hasLabelPtrDefault,
 	}
+
 	// hasLabel
 	hasLabelCmd := &flaeg.Command{
 		Name:                  "has-label",
@@ -74,17 +82,14 @@ func main() {
 
 	flag.AddCommand(hasLabelCmd)
 
-	isPRCfg := &Config{}
-	isPRPointerCfg := &Config{}
-
 	// isPR
 	isPRCmd := &flaeg.Command{
 		Name:                  "is-pr",
 		Description:           "Check if its a PR",
-		Config:                isPRCfg,
-		DefaultPointersConfig: isPRPointerCfg,
+		Config:                defaultCfg,
+		DefaultPointersConfig: &Config{},
 		Run: func() error {
-			return isPRRun(isPRCfg)
+			return isPRRun(defaultCfg)
 		},
 	}
 
@@ -97,7 +102,7 @@ func main() {
 		Config:                &NoOption{},
 		DefaultPointersConfig: &NoOption{},
 		Run: func() error {
-			DisplayVersion()
+			displayVersion()
 			return nil
 		},
 	}
@@ -111,8 +116,6 @@ func main() {
 }
 
 func isPRRun(config *Config) error {
-	defaultConfig(config)
-
 	if err := validate(config); err != nil {
 		return err
 	}
@@ -129,8 +132,6 @@ func isPRRun(config *Config) error {
 }
 
 func hasLabelRun(config *HasLabelConfig) error {
-	defaultConfig(config.Config)
-
 	if err := validate(config.Config); err != nil {
 		return err
 	}
@@ -164,44 +165,15 @@ func hasLabel(pr *github.PullRequest, label string) bool {
 }
 
 func rootRun(config *Config) error {
-	defaultConfig(config)
-
 	if err := validate(config); err != nil {
 		return err
 	}
 
 	if strings.Contains(config.Branch, "pull-request-") {
-		err := checkoutPR(config)
-		if err != nil {
-			return err
-		}
-
-		return nil
+		return checkoutPR(config)
 	}
 
 	return cloneAndCheckout(config.URL, config.Directory, config.Branch, config.SHA)
-}
-
-func defaultConfig(config *Config) {
-	if config.URL == "" {
-		config.URL = os.Getenv("SEMAPHORE_GIT_BRANCH")
-	}
-
-	if config.Branch == "" {
-		config.Branch = os.Getenv("SEMAPHORE_GIT_BRANCH")
-	}
-
-	if config.Directory == "" {
-		config.Directory = os.Getenv("SEMAPHORE_GIT_DIR")
-	}
-
-	if config.SHA == "" {
-		config.SHA = os.Getenv("SEMAPHORE_GIT_SHA")
-	}
-
-	if config.GithubToken == "" {
-		config.GithubToken = os.Getenv("GITHUB_TOKEN")
-	}
 }
 
 func checkoutPR(config *Config) error {
@@ -225,14 +197,14 @@ func checkoutPR(config *Config) error {
 func getPR(config *Config) (*github.PullRequest, error) {
 	s := strings.Split(config.Branch, "pull-request-")
 	if len(s) == 2 {
-		ID, err := strconv.Atoi(s[1])
+		id, err := strconv.Atoi(s[1])
 		if err != nil {
 			return nil, err
 		}
 
 		ctx := context.Background()
 		client := createGhClient(ctx, config)
-		pr, _, err := client.PullRequests.Get(ctx, config.Owner, config.Repo, ID)
+		pr, _, err := client.PullRequests.Get(ctx, config.Owner, config.Repo, id)
 		if err != nil {
 			return nil, err
 		}

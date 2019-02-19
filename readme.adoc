@@ -2,7 +2,17 @@
 
 `checkout-semaphoreci2` is a Go tool that help to manage checkout pull request from fork.
 
-== Example
+== Description
+
+=== Environment Variables
+
+* `SEMAPHORE_GIT_BRANCH`: provided by Semaphore
+* `SEMAPHORE_GIT_BRANCH`: provided by Semaphore
+* `SEMAPHORE_GIT_DIR`: provided by Semaphore
+* `SEMAPHORE_GIT_SHA`: provided by Semaphore
+* `GITHUB_TOKEN`: must be provided by the user
+
+=== CLI
 
 [source, bash]
 ----
