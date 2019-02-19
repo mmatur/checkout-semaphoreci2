@@ -1,0 +1,5 @@
+.idea/
+vendor/
+dist/
+goreleaser
+checkout-semaphoreci2

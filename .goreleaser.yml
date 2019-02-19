@@ -1,0 +1,24 @@
+project_name: checkout-semaphoreci2
+
+builds:
+  - binary: checkout-semaphoreci2
+    goos:
+      - linux
+    goarch:
+      - amd64
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - '^docs:'
+      - '^doc:'
+      - '^chore:'
+      - '^test:'
+      - '^tests:'
+
+archive:
+  name_template: '{{ .ProjectName }}_v{{ .Version }}_{{ .Os }}_{{ .Arch }}'
+  format: tar.gz
+  files:
+    - LICENSE
