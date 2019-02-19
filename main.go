@@ -21,18 +21,19 @@ import (
 
 // Config holds configuration.
 type Config struct {
-	Owner       string `description:"Repository owner"`
-	Repo        string `description:"Repository name"`
-	GithubToken string `description:"Github Token"`
-	URL         string `description:"The URL of the GitHub repository used in the current Semaphore 2.0 project."`
-	Branch      string `description:"The name of the GitHub branch that is used in the current job."`
-	SHA         string `description:"The current revision of code that the pipeline is using."`
-	Directory   string `description:"Name of the directory that contains the files of the GitHub repository of the current Semaphore 2.0 project"`
+	Owner       string    `description:"Repository owner"`
+	Repo        string    `description:"Repository name"`
+	GithubToken string    `description:"Github Token"`
+	URL         string    `description:"The URL of the GitHub repository used in the current Semaphore 2.0 project."`
+	Branch      string    `description:"The name of the GitHub branch that is used in the current job."`
+	SHA         string    `description:"The current revision of code that the pipeline is using."`
+	Directory   string    `description:"Name of the directory that contains the files of the GitHub repository of the current Semaphore 2.0 project"`
+	Required    *Required `description:"Required elements"`
 }
 
-// HasLabelConfig holds has-label configuration.
-type HasLabelConfig struct {
-	*Config
+// Required holds required elements.
+type Required struct {
+	PR    bool   `description:"PR required"`
 	Label string `description:"Required label"`
 }
 
@@ -42,58 +43,27 @@ type NoOption struct{}
 func main() {
 	defaultCfg := &Config{
 		GithubToken: os.Getenv("GITHUB_TOKEN"),
-		URL:         os.Getenv("SEMAPHORE_GIT_BRANCH"),
+		URL:         os.Getenv("SEMAPHORE_GIT_URL"),
 		Branch:      os.Getenv("SEMAPHORE_GIT_BRANCH"),
 		SHA:         os.Getenv("SEMAPHORE_GIT_SHA"),
 		Directory:   os.Getenv("SEMAPHORE_GIT_DIR"),
+	}
+
+	defaultPointerCfg := &Config{
+		Required: &Required{},
 	}
 
 	rootCmd := &flaeg.Command{
 		Name:                  "checkout-semaphoreci2",
 		Description:           "Checkout SemaphoreCI",
 		Config:                defaultCfg,
-		DefaultPointersConfig: &Config{},
+		DefaultPointersConfig: defaultPointerCfg,
 		Run: func() error {
 			return rootRun(defaultCfg)
 		},
 	}
 
 	flag := flaeg.New(rootCmd, os.Args[1:])
-
-	hasLabelCfg := &HasLabelConfig{
-		Config: defaultCfg,
-	}
-
-	hasLabelPtrDefault := defaultCfg
-	hasLabelPointerCfg := &HasLabelConfig{
-		Config: hasLabelPtrDefault,
-	}
-
-	// hasLabel
-	hasLabelCmd := &flaeg.Command{
-		Name:                  "has-label",
-		Description:           "Check if PR has label",
-		Config:                hasLabelCfg,
-		DefaultPointersConfig: hasLabelPointerCfg,
-		Run: func() error {
-			return hasLabelRun(hasLabelCfg)
-		},
-	}
-
-	flag.AddCommand(hasLabelCmd)
-
-	// isPR
-	isPRCmd := &flaeg.Command{
-		Name:                  "is-pr",
-		Description:           "Check if its a PR",
-		Config:                defaultCfg,
-		DefaultPointersConfig: &Config{},
-		Run: func() error {
-			return isPRRun(defaultCfg)
-		},
-	}
-
-	flag.AddCommand(isPRCmd)
 
 	// version
 	versionCmd := &flaeg.Command{
@@ -116,42 +86,33 @@ func main() {
 	}
 }
 
-func isPRRun(config *Config) error {
+func rootRun(config *Config) error {
 	if err := validate(config); err != nil {
 		return err
 	}
 
-	_, err := getPR(config)
-	if err != nil {
-		return fmt.Errorf("its not a PR")
+	if strings.Contains(config.Branch, "pull-request-") {
+		pr, err := getPR(config)
+		if err != nil {
+			return err
+		}
+
+		if pr == nil {
+			return fmt.Errorf("its not a PR")
+		}
+
+		if config.Required.Label != "" && !hasLabel(pr, config.Required.Label) {
+			return fmt.Errorf("does not have the required label %s", config.Required.Label)
+		}
+
+		return checkoutPR(pr, config)
 	}
 
-	log.Println("yes")
-
-	return nil
-}
-
-func hasLabelRun(config *HasLabelConfig) error {
-	if err := validate(config.Config); err != nil {
-		return err
+	if config.Required.PR {
+		return fmt.Errorf("pr required")
 	}
 
-	if err := required(config.Label, "label"); err != nil {
-		return err
-	}
-
-	pr, err := getPR(config.Config)
-	if err != nil {
-		return fmt.Errorf("its not a PR")
-	}
-
-	if !hasLabel(pr, config.Label) {
-		return fmt.Errorf("PR has no label %s", config.Label)
-	}
-
-	log.Println("yes")
-
-	return nil
+	return cloneAndCheckout(config.URL, config.Directory, config.Branch, config.SHA)
 }
 
 func hasLabel(pr *github.PullRequest, label string) bool {
@@ -164,24 +125,7 @@ func hasLabel(pr *github.PullRequest, label string) bool {
 	return false
 }
 
-func rootRun(config *Config) error {
-	if err := validate(config); err != nil {
-		return err
-	}
-
-	if strings.Contains(config.Branch, "pull-request-") {
-		return checkoutPR(config)
-	}
-
-	return cloneAndCheckout(config.URL, config.Directory, config.Branch, config.SHA)
-}
-
-func checkoutPR(config *Config) error {
-	pr, err := getPR(config)
-	if err != nil {
-		return err
-	}
-
+func checkoutPR(pr *github.PullRequest, config *Config) error {
 	if pr != nil {
 		if pr.GetHead() == nil || pr.GetHead().GetRepo() == nil {
 			return fmt.Errorf("unable to get head of PR %d", pr.GetID())

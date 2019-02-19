@@ -6,7 +6,7 @@
 
 === Environment Variables
 
-* `SEMAPHORE_GIT_BRANCH`: provided by Semaphore
+* `SEMAPHORE_GIT_URL`: provided by Semaphore
 * `SEMAPHORE_GIT_BRANCH`: provided by Semaphore
 * `SEMAPHORE_GIT_DIR`: provided by Semaphore
 * `SEMAPHORE_GIT_SHA`: provided by Semaphore
@@ -23,21 +23,22 @@ Usage: checkout-semaphoreci2 [flags] <command> [<arguments>]
 Use "checkout-semaphoreci2 <command> --help" for help on any command.
 
 Commands:
-        has-label                                          Check if PR has label
-        is-pr                                              Check if its a PR
-        version                                            Display the version.
+	version                                            Display the version.
 
 Flag's usage: checkout-semaphoreci2 [--flag=flag_argument] [-f[flag_argument]] ...     set flag_argument to flag(s)
           or: checkout-semaphoreci2 [--flag[=true|false| ]] [-f[true|false| ]] ...     set true/false to boolean flag(s)
 
 Flags:
-    --branch      The name of the GitHub branch that is used in the current job.
-    --directory   Name of the directory that contains the files of the GitHub repository of the
-                  current Semaphore 2.0 project
-    --githubtoken Github Token
-    --owner       Repository owner
-    --repo        Repository name
-    --sha         The current revision of code that the pipeline is using.
-    --url         The URL of the GitHub repository used in the current Semaphore 2.0 project.
--h, --help        Print Help (this message) and exit
+    --branch         The name of the GitHub branch that is used in the current job.
+    --directory      Name of the directory that contains the files of the GitHub repository of the
+                     current Semaphore 2.0 project
+    --githubtoken    Github Token
+    --owner          Repository owner
+    --repo           Repository name
+    --required       Required elements                                                             (default "false")
+    --required.label Required label
+    --required.pr    PR required                                                                   (default "false")
+    --sha            The current revision of code that the pipeline is using.
+    --url            The URL of the GitHub repository used in the current Semaphore 2.0 project.
+-h, --help           Print Help (this message) and exit
 ----
