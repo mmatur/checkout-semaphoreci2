@@ -112,6 +112,7 @@ func main() {
 	// Run command
 	if err := flag.Run(); err != nil && err != pflag.ErrHelp {
 		log.Printf("Error: %v\n", err)
+		os.Exit(1)
 	}
 }
 
@@ -122,8 +123,7 @@ func isPRRun(config *Config) error {
 
 	_, err := getPR(config)
 	if err != nil {
-		log.Println("It's not a PR")
-		return nil
+		return fmt.Errorf("its not a PR")
 	}
 
 	log.Println("yes")
@@ -142,8 +142,7 @@ func hasLabelRun(config *HasLabelConfig) error {
 
 	pr, err := getPR(config.Config)
 	if err != nil {
-		log.Println("It's not a PR")
-		return nil
+		return fmt.Errorf("its not a PR")
 	}
 
 	if !hasLabel(pr, config.Label) {
@@ -151,6 +150,7 @@ func hasLabelRun(config *HasLabelConfig) error {
 	}
 
 	log.Println("yes")
+
 	return nil
 }
 
