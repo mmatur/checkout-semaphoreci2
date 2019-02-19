@@ -42,3 +42,10 @@ Flags:
     --url            The URL of the GitHub repository used in the current Semaphore 2.0 project.
 -h, --help           Print Help (this message) and exit
 ----
+
+=== Download
+
+[source, bash]
+----
+curl -sfL https://raw.githubusercontent.com/mmatur/checkout-semaphoreci2/master/godownloader.sh | bash -s -- -b $GOPATH/bin v0.0.3
+----
